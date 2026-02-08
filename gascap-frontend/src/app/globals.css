@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 2%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 4%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 4%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 40 100% 59%;
+    --primary-foreground: 0 0% 4%;
+    --secondary: 0 0% 8%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 50%;
+    --accent: 33 80% 47%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 8%;
+    --input: 0 0% 10%;
+    --ring: 40 100% 59%;
+    --radius: 0.25rem;
+    --panel: 0 0% 3%;
+    --panel2: 0 0% 5%;
+  }
+}
+
+@layer base {
+  * { @apply border-border; }
+  body {
+    @apply bg-[#050505] text-foreground font-body antialiased selection:bg-primary/30 overflow-hidden;
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+}
+
+.font-code { font-family: 'Source Code Pro', monospace; }
+
+.glass-panel {
+  @apply bg-card/40 backdrop-blur-md border border-white/[0.03] rounded-sm shadow-xl;
+}
+
+.trading-panel { @apply flex flex-col h-full; }
+
+.trading-panel-header {
+  @apply h-9 px-3 flex items-center justify-between border-b bg-white/[0.01] text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground;
+}
+
+::-webkit-scrollbar { width: 2px; height: 2px; }
+::-webkit-scrollbar-track { @apply bg-transparent; }
+::-webkit-scrollbar-thumb { @apply bg-white/10 rounded-full hover:bg-white/20; }
+
+.bg-grid {
+  background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.02) 1px, transparent 0);
+  background-size: 24px 24px;
+}

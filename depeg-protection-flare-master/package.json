@@ -1,0 +1,48 @@
+{
+  "name": "depeg-protection-flare",
+  "version": "1.0.0",
+  "description": "Parametric Stablecoin Depeg Protection using Flare FDC",
+  "main": "index.js",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "oracle": "node oracle/server.js",
+    "deploy:factory": "hardhat run scripts/deploy-factory.js --network coston2",
+    "create:market": "hardhat run scripts/create-market.js --network coston2",
+    "add:liquidity": "hardhat run scripts/add-liquidity.js --network coston2",
+    "buy:protection": "hardhat run scripts/buy-protection.js --network coston2",
+    "claim": "hardhat run scripts/claim.js --network coston2",
+    "list:markets": "hardhat run scripts/list-markets.js --network coston2"
+  },
+  "keywords": [
+    "flare",
+    "fdc",
+    "defi",
+    "insurance",
+    "depeg",
+    "stablecoin",
+    "oracle"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-chai-matchers": "^2.0.0",
+    "@nomicfoundation/hardhat-ethers": "^3.0.0",
+    "@nomicfoundation/hardhat-network-helpers": "^1.0.0",
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "@nomicfoundation/hardhat-verify": "^2.0.0",
+    "chai": "^4.3.0",
+    "dotenv": "^16.0.0",
+    "ethers": "^6.16.0",
+    "hardhat": "^2.19.0",
+    "hardhat-gas-reporter": "^1.0.0",
+    "solidity-coverage": "^0.8.0"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.4.0",
+    "axios": "^1.6.0",
+    "cors": "^2.8.5",
+    "express": "^4.18.0",
+    "yargs": "^17.7.0"
+  }
+}

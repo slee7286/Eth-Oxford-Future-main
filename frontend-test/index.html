@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FlareRisk — Gas Price Test</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0a0a; color: #e0e0e0; padding: 24px; }
+    h1 { font-size: 20px; margin-bottom: 4px; color: #fff; }
+    .subtitle { font-size: 13px; color: #888; margin-bottom: 24px; }
+    .stats { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+    .stat { background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 16px 20px; min-width: 180px; }
+    .stat-label { font-size: 11px; text-transform: uppercase; color: #888; letter-spacing: 0.5px; }
+    .stat-value { font-size: 28px; font-weight: 600; color: #fff; margin-top: 4px; }
+    .stat-value.fdc { color: #f97316; }
+    .stat-value.mock { color: #6366f1; }
+    .chart-container { background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 20px; margin-bottom: 24px; }
+    .controls { display: flex; gap: 8px; margin-bottom: 16px; }
+    .controls button { background: #333; border: 1px solid #555; color: #e0e0e0; padding: 6px 14px; border-radius: 4px; cursor: pointer; font-size: 13px; }
+    .controls button.active { background: #f97316; border-color: #f97316; color: #000; font-weight: 600; }
+    .controls button:hover { background: #444; }
+    .controls button.active:hover { background: #fb923c; }
+    .status { font-size: 12px; color: #666; margin-top: 12px; }
+    .status span { color: #4ade80; }
+  </style>
+</head>
+<body>
+  <h1>FlareRisk Gas Price Monitor</h1>
+  <p class="subtitle">Test dashboard — data sourced via Flare FDC Web2Json attestations</p>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-label">Current Gas Price</div>
+      <div class="stat-value" id="current-price">--</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">7-Day Average</div>
+      <div class="stat-value" id="avg-price">--</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Data Source</div>
+      <div class="stat-value" id="source-mode" style="font-size: 18px;">--</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Readings Stored</div>
+      <div class="stat-value" id="reading-count" style="font-size: 18px;">--</div>
+    </div>
+  </div>
+
+  <div class="chart-container">
+    <div class="controls">
+      <button class="active" data-hours="1">1H</button>
+      <button data-hours="6">6H</button>
+      <button data-hours="24">1D</button>
+      <button data-hours="168">7D</button>
+    </div>
+    <canvas id="gasChart" height="100"></canvas>
+  </div>
+
+  <div class="status">
+    Auto-refreshing every <span>15s</span> | Last update: <span id="last-update">--</span>
+  </div>
+
+<script>
+const API = window.location.origin;
+let chart = null;
+let currentHours = 1;
+
+async function fetchJSON(path) {
+  const res = await fetch(API + path);
+  return res.json();
+}
+
+async function updateStats() {
+  try {
+    const [current, avg, health] = await Promise.all([
+      fetchJSON('/gas/current'),
+      fetchJSON('/gas/average?days=7'),
+      fetchJSON('/health'),
+    ]);
+
+    const priceEl = document.getElementById('current-price');
+    priceEl.textContent = current.latest.gas_price_gwei.toFixed(1) + ' gwei';
+    priceEl.className = 'stat-value ' + (current.latest.source === 'mock' ? 'mock' : 'fdc');
+
+    document.getElementById('avg-price').textContent = avg.average_gwei.toFixed(1) + ' gwei';
+
+    const modeEl = document.getElementById('source-mode');
+    modeEl.textContent = health.mode.toUpperCase();
+    modeEl.className = 'stat-value ' + health.mode;
+
+    document.getElementById('reading-count').textContent = health.readings_stored.toLocaleString();
+    document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
+  } catch (e) {
+    console.error('Stats fetch error:', e);
+  }
+}
+
+async function updateChart() {
+  try {
+    const now = Math.floor(Date.now() / 1000);
+    const from = now - (currentHours * 3600);
+    const data = await fetchJSON(`/gas/history?from=${from}&to=${now}`);
+
+    const points = data.readings
+      .filter(r => r.source === 'mock' || r.source === 'fdc')
+      .map(r => ({
+        x: new Date(r.timestamp * 1000),
+        y: r.gas_price_gwei,
+      }));
+
+    if (chart) {
+      chart.data.datasets[0].data = points;
+      chart.update('none');
+    } else {
+      const ctx = document.getElementById('gasChart').getContext('2d');
+      chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          datasets: [{
+            label: 'Gas Price (gwei)',
+            data: points,
+            borderColor: '#f97316',
+            backgroundColor: 'rgba(249,115,22,0.1)',
+            borderWidth: 1.5,
+            pointRadius: 0,
+            fill: true,
+            tension: 0.3,
+          }],
+        },
+        options: {
+          responsive: true,
+          animation: false,
+          interaction: { mode: 'index', intersect: false },
+          scales: {
+            x: {
+              type: 'time',
+              time: { tooltipFormat: 'HH:mm:ss' },
+              grid: { color: '#222' },
+              ticks: { color: '#888', maxTicksLimit: 8 },
+            },
+            y: {
+              title: { display: true, text: 'gwei', color: '#888' },
+              grid: { color: '#222' },
+              ticks: { color: '#888' },
+              beginAtZero: true,
+            },
+          },
+          plugins: {
+            legend: { display: false },
+          },
+        },
+      });
+    }
+  } catch (e) {
+    console.error('Chart fetch error:', e);
+  }
+}
+
+// Time range buttons
+document.querySelectorAll('.controls button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.controls button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentHours = parseInt(btn.dataset.hours);
+    updateChart();
+  });
+});
+
+// Initial load + auto-refresh
+async function refresh() {
+  await Promise.all([updateStats(), updateChart()]);
+}
+refresh();
+setInterval(refresh, 15000);
+</script>
+</body>
+</html>
